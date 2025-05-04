@@ -94,11 +94,8 @@ resource "azurerm_linux_virtual_machine" "jumpbox" {
     apt-get install -y apt-transport-https ca-certificates curl software-properties-common
     # Install Azure CLI
     curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-    # Install kubectl
-    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-    echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | tee -a /etc/apt/sources.list.d/kubernetes.list
-    apt-get update
-    apt-get install -y kubectl
+    # Install kubectl using Azure CLI
+    az aks install-cli
     # Install Helm
     curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
     chmod 700 get_helm.sh
