@@ -1,9 +1,10 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: yopy-mongodb
   namespace: yopy-app
 spec:
+  serviceName: yopy-mongodb-service
   replicas: 1
   selector:
     matchLabels:
@@ -28,10 +29,14 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "500m"
-      volumes:
-      - name: mongodb-data
-        persistentVolumeClaim:
-          claimName: yopy-mongodb-pvc
+  volumeClaimTemplates:
+  - metadata:
+      name: mongodb-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 5Gi
 ---
 apiVersion: v1
 kind: Service
@@ -46,15 +51,4 @@ spec:
       port: 27017
       targetPort: 27017
   type: ClusterIP
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: yopy-mongodb-pvc
-  namespace: yopy-app
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 5Gi 
+  clusterIP: None  # Headless service for StatefulSet 
