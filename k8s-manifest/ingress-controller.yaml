@@ -6,38 +6,158 @@ metadata:
     app.kubernetes.io/name: ingress-nginx
     app.kubernetes.io/instance: ingress-nginx
 ---
-apiVersion: helm.cattle.io/v1
-kind: HelmChart
+apiVersion: v1
+kind: ServiceAccount
 metadata:
   name: ingress-nginx
   namespace: ingress-lb
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ingress-nginx
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - endpoints
+      - nodes
+      - pods
+      - secrets
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - ingresses/status
+    verbs:
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ingress-nginx
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ingress-nginx
+subjects:
+  - kind: ServiceAccount
+    name: ingress-nginx
+    namespace: ingress-lb
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingress-nginx-controller
+  namespace: ingress-lb
 spec:
-  repo: https://kubernetes.github.io/ingress-nginx
-  chart: ingress-nginx
-  targetNamespace: ingress-lb
-  valuesContent: |-
-    controller:
-      service:
-        annotations:
-          service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path: /healthz
-          service.beta.kubernetes.io/azure-load-balancer-internal: "false"
-          service.beta.kubernetes.io/azure-load-balancer-resource-group: yopy-rg
-      config:
-        use-forwarded-headers: "true"
-        compute-full-forwarded-for: "true"
-        use-proxy-protocol: "false"
-      extraArgs:
-        default-ssl-certificate: "ingress-lb/ingress-nginx-tls"
-      resources:
-        requests:
-          cpu: 100m
-          memory: 90Mi
-        limits:
-          cpu: 500m
-          memory: 512Mi
-      admissionWebhooks:
-        enabled: false
-      metrics:
-        enabled: true
-        serviceMonitor:
-          enabled: false 
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ingress-nginx
+      app.kubernetes.io/instance: ingress-nginx
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ingress-nginx
+        app.kubernetes.io/instance: ingress-nginx
+    spec:
+      serviceAccountName: ingress-nginx
+      containers:
+        - name: controller
+          image: registry.k8s.io/ingress-nginx/controller:v1.9.4
+          args:
+            - /nginx-ingress-controller
+            - --configmap=$(POD_NAMESPACE)/ingress-nginx-controller
+            - --publish-service=$(POD_NAMESPACE)/ingress-nginx-controller
+            - --election-id=ingress-controller-leader
+            - --controller-class=k8s.io/ingress-nginx
+            - --ingress-class=nginx
+            - --default-ssl-certificate=ingress-lb/ingress-nginx-tls
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          resources:
+            requests:
+              cpu: 100m
+              memory: 90Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          ports:
+            - name: http
+              containerPort: 80
+            - name: https
+              containerPort: 443
+            - name: webhook
+              containerPort: 8443
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 10254
+              scheme: HTTP
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 10254
+              scheme: HTTP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress-nginx-controller
+  namespace: ingress-lb
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path: /healthz
+    service.beta.kubernetes.io/azure-load-balancer-internal: "false"
+    service.beta.kubernetes.io/azure-load-balancer-resource-group: yopy-rg
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+    - name: https
+      port: 443
+      targetPort: https
+  selector:
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx 
