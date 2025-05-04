@@ -48,7 +48,11 @@ function App() {
   };
 
   return (
-    <div className="App">
+    <div className="app-container">
+      <div className="app-header" style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        <img src="/gator.gif" alt="Yopy Gator Logo" style={{ height: '80px', marginBottom: '1rem' }} />
+        <h1 style={{ fontFamily: 'cursive', color: '#2ecc40', fontWeight: 'bold' }}>yopy</h1>
+      </div>
       <div className="chat-container">
         <div className="messages">
           {messages.map((message, index) => (

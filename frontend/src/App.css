@@ -57,4 +57,13 @@
 
 .message-form button:hover {
   background-color: #128C7E;
+}
+
+.app-header img {
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0);}
+  50% { transform: translateY(-10px);}
 } 
