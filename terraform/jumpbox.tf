@@ -90,16 +90,47 @@ resource "azurerm_linux_virtual_machine" "jumpbox" {
   # Install required tools
   custom_data = base64encode(<<-EOF
     #!/bin/bash
+    # Update system and install basic dependencies
     apt-get update
-    apt-get install -y apt-transport-https ca-certificates curl software-properties-common
+    apt-get install -y apt-transport-https ca-certificates curl software-properties-common git jq
+
     # Install Azure CLI
     curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
     # Install kubectl using Azure CLI
     az aks install-cli
+
     # Install Helm
     curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
     chmod 700 get_helm.sh
     ./get_helm.sh
+
+    # Install Docker
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+    apt-get update
+    apt-get install -y docker-ce docker-ce-cli containerd.io
+
+    # Add user to docker group
+    usermod -aG docker adminuser
+
+    # Install kubectx and kubens for easier context/namespace switching
+    git clone https://github.com/ahmetb/kubectx /opt/kubectx
+    ln -s /opt/kubectx/kubectx /usr/local/bin/kubectx
+    ln -s /opt/kubectx/kubens /usr/local/bin/kubens
+
+    # Install k9s for cluster management
+    curl -sS https://webinstall.dev/k9s | bash
+
+    # Set up bash completion
+    echo 'source <(kubectl completion bash)' >> /home/adminuser/.bashrc
+    echo 'source <(helm completion bash)' >> /home/adminuser/.bashrc
+    echo 'alias k=kubectl' >> /home/adminuser/.bashrc
+    echo 'complete -F __start_kubectl k' >> /home/adminuser/.bashrc
+
+    # Clean up
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
   EOF
   )
 }
