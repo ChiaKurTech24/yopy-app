@@ -50,10 +50,16 @@ function App() {
   return (
     <div className="app-container">
       <div className="app-header" style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <img src="/gator.gif" alt="Yopy Gator Logo" style={{ height: '80px', marginBottom: '1rem' }} />
-        <h1 style={{ fontFamily: 'cursive', color: '#2ecc40', fontWeight: 'bold' }}>yopy</h1>
+        <h1 className="yopy-title">yopy</h1>
+      </div>
+      <div className="welcome-panel">
+        <h2>Welcome to Yopy Chat!</h2>
+        <p>Connect, chat, and have fun with your friends. 🐊</p>
       </div>
       <div className="chat-container">
+        <div className="gator-logo-box">
+          <img src="/gator-icon.svg" alt="Gator Icon" className="gator-logo" />
+        </div>
         <div className="messages">
           {messages.map((message, index) => (
             <div key={index} className="message">
@@ -79,6 +85,9 @@ function App() {
           <button type="submit">Send</button>
         </form>
       </div>
+      <footer className="app-footer">
+        <span>© 2024 yopy</span>
+      </footer>
     </div>
   );
 }
