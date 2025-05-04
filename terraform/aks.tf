@@ -32,6 +32,6 @@ resource "null_resource" "get_credentials" {
   depends_on = [azurerm_kubernetes_cluster.yopy]
   
   provisioner "local-exec" {
-    command = "az aks get-credentials --resource-group ${azurerm_resource_group.yopy.name} --name ${azurerm_kubernetes_cluster.yopy.name}"
+    command = "az aks get-credentials --resource-group ${azurerm_resource_group.yopy.name} --name ${azurerm_kubernetes_cluster.yopy.name} --overwrite-existing"
   }
 } 
