@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yopy-backend
+  namespace: yopy-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: yopy-backend
+  template:
+    metadata:
+      labels:
+        app: yopy-backend
+    spec:
+      containers:
+      - name: yopy-backend
+        image: yck24/yopy-backend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+        env:
+        - name: MONGODB_URI
+          value: "mongodb://yopy-mongodb-service:27017/yopy"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "200m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yopy-backend-service
+  namespace: yopy-app
+spec:
+  selector:
+    app: yopy-backend
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+  type: ClusterIP 

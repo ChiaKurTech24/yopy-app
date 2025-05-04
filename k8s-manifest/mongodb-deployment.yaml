@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yopy-mongodb
+  namespace: yopy-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: yopy-mongodb
+  template:
+    metadata:
+      labels:
+        app: yopy-mongodb
+    spec:
+      containers:
+      - name: yopy-mongodb
+        image: mongo:6.0
+        ports:
+        - containerPort: 27017
+        volumeMounts:
+        - name: mongodb-data
+          mountPath: /data/db
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: mongodb-data
+        persistentVolumeClaim:
+          claimName: yopy-mongodb-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: yopy-mongodb-service
+  namespace: yopy-app
+spec:
+  selector:
+    app: yopy-mongodb
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: yopy-mongodb-pvc
+  namespace: yopy-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi 
