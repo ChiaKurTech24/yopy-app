@@ -23,7 +23,6 @@ rules:
       - configmaps
       - endpoints
       - nodes
-      - pods
       - secrets
       - namespaces
     verbs:
@@ -66,6 +65,13 @@ rules:
       - ingresses/status
     verbs:
       - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ingress-nginx
+  namespace: ingress-lb
+rules:
   - apiGroups:
       - ""
     resources:
@@ -74,6 +80,20 @@ rules:
       - get
       - list
       - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ingress-nginx
+  namespace: ingress-lb
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ingress-nginx
+subjects:
+  - kind: ServiceAccount
+    name: ingress-nginx
+    namespace: ingress-lb
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
