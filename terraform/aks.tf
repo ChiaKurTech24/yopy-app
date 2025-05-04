@@ -27,6 +27,19 @@ resource "azurerm_kubernetes_cluster" "yopy" {
   tags = var.tags
 }
 
+# Role assignments for AKS managed identity
+resource "azurerm_role_assignment" "aks_network_contributor" {
+  scope                = azurerm_resource_group.yopy.id
+  role_definition_name = "Network Contributor"
+  principal_id         = azurerm_kubernetes_cluster.yopy.identity[0].principal_id
+}
+
+resource "azurerm_role_assignment" "aks_public_ip_contributor" {
+  scope                = azurerm_resource_group.yopy.id
+  role_definition_name = "Contributor"
+  principal_id         = azurerm_kubernetes_cluster.yopy.identity[0].principal_id
+}
+
 # Get AKS credentials
 resource "null_resource" "get_credentials" {
   depends_on = [azurerm_kubernetes_cluster.yopy]
