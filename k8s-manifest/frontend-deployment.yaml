@@ -22,7 +22,7 @@ spec:
         - containerPort: 8080
         env:
         - name: REACT_APP_API_URL
-          value: "/api"
+          value: "http://134.33.156.158/api"
         securityContext:
           runAsUser: 101
           runAsGroup: 101
