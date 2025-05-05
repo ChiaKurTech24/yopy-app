@@ -21,7 +21,7 @@ spec:
         - containerPort: 8080
         env:
         - name: REACT_APP_API_URL
-          value: "http://yopy-backend-service:3000"
+          value: "/api"
         securityContext:
           runAsUser: 101
           runAsGroup: 101
