@@ -88,11 +88,22 @@ function App() {
   // Fetch messages when a user is selected
   useEffect(() => {
     if (token && selectedUser && view === 'chat') {
-      fetch(`${API_BASE}/api/messages?recipient=${selectedUser._id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(res => res.json())
-        .then(setMessages);
+      const fetchMessages = async () => {
+        const res = await fetch(`${API_BASE}/api/messages?recipient=${selectedUser._id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setMessages(data);
+      };
+
+      // Initial fetch
+      fetchMessages();
+
+      // Set up polling every 3 seconds
+      const pollInterval = setInterval(fetchMessages, 3000);
+
+      // Cleanup interval on unmount or when dependencies change
+      return () => clearInterval(pollInterval);
     }
   }, [token, selectedUser, view]);
 
@@ -109,12 +120,6 @@ function App() {
       body: JSON.stringify({ text: newMessage, recipient: selectedUser._id })
     });
     setNewMessage('');
-    // Refresh messages
-    fetch(`${API_BASE}/api/messages?recipient=${selectedUser._id}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(setMessages);
   };
 
   // Logout
