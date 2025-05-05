@@ -25,8 +25,7 @@ RUN mkdir -p /var/cache/nginx /var/run /var/log/nginx && \
     chown nginx:nginx /var/run/nginx.pid
 
 # Create a custom nginx configuration
-RUN echo 'user nginx; \
-worker_processes auto; \
+RUN echo 'worker_processes auto; \
 pid /var/run/nginx.pid; \
 events { \
     worker_connections 1024; \
@@ -37,7 +36,7 @@ http { \
     sendfile on; \
     keepalive_timeout 65; \
     server { \
-        listen 80; \
+        listen 8080; \
         location / { \
             root /usr/share/nginx/html; \
             index index.html index.htm; \
@@ -56,7 +55,7 @@ RUN chown -R nginx:nginx /usr/share/nginx/html && \
 # Switch to nginx user
 USER nginx
 
-EXPOSE 80
+EXPOSE 8080
 
 # Use nginx's default CMD
 CMD ["nginx", "-g", "daemon off;"] 
