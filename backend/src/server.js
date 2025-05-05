@@ -3,20 +3,10 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const app = express();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
-
-// Email transporter (configure with your SMTP or Gmail)
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER, // your email
-    pass: process.env.EMAIL_PASS  // your email password or app password
-  }
-});
 
 // Middleware
 app.use(cors());
@@ -33,8 +23,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   username: { type: String, required: true, unique: true },
   passwordHash: { type: String, required: true },
-  isVerified: { type: Boolean, default: false },
-  verificationToken: String
+  isVerified: { type: Boolean, default: true }  // Set default to true
 });
 const User = mongoose.model('User', userSchema);
 
@@ -59,7 +48,7 @@ function authMiddleware(req, res, next) {
   });
 }
 
-// Registration with email verification
+// Registration without email verification
 app.post('/api/register', async (req, res) => {
   try {
     const { email, username, password } = req.body;
@@ -67,46 +56,21 @@ app.post('/api/register', async (req, res) => {
     const existing = await User.findOne({ $or: [{ email }, { username }] });
     if (existing) return res.status(409).json({ error: 'Email or username already exists' });
     const passwordHash = await bcrypt.hash(password, 10);
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-    const user = new User({ email, username, passwordHash, verificationToken });
+    const user = new User({ email, username, passwordHash, isVerified: true });
     await user.save();
-
-    // Send verification email
-    const verifyUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify?token=${verificationToken}&email=${email}`;
-    await transporter.sendMail({
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Verify your Yopy account',
-      html: `<p>Click <a href="${verifyUrl}">here</a> to verify your account.</p>`
-    });
-
-    res.status(201).json({ message: 'User registered. Please check your email to verify your account.' });
+    res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Registration failed' });
   }
 });
 
-// Email verification endpoint
-app.get('/api/verify', async (req, res) => {
-  const { token, email } = req.query;
-  const user = await User.findOne({ email, verificationToken: token });
-  if (!user) return res.status(400).json({ error: 'Invalid verification link' });
-  user.isVerified = true;
-  user.verificationToken = undefined;
-  await user.save();
-  res.json({ message: 'Email verified! You can now log in.' });
-});
-
-// Login (check isVerified)
+// Login
 app.post('/api/login', async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
       return res.status(401).json({ error: 'Invalid credentials' });
-    }
-    if (!user.isVerified) {
-      return res.status(403).json({ error: 'Email not verified' });
     }
     const token = jwt.sign({ userId: user._id, username: user.username }, JWT_SECRET, { expiresIn: '1d' });
     res.json({ token, username: user.username, userId: user._id });

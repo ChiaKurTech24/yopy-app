@@ -22,6 +22,8 @@ spec:
         env:
         - name: MONGODB_URI
           value: "mongodb://yopy-mongodb-service:27017/yopy"
+        - name: JWT_SECRET
+          value: "yopy-secret-key-123"
         resources:
           requests:
             memory: "256Mi"
